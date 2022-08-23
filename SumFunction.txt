@@ -1,4 +1,4 @@
-use Moto2018
+use #DataBase#
 go
 
 
@@ -22,18 +22,18 @@ SET @SUM_DOC_QUANTITY = 0;
 DECLARE @QUA numeric(15,2);
 SET @QUA = @LAST_QUANTITY;
 
-     /*Объявляем курсор*/
+     /*ГЋГЎГєГїГўГ«ГїГҐГ¬ ГЄГіГ°Г±Г®Г°*/
 DECLARE @CURSOR CURSOR
-/*Заполняем курсор*/
+/*Г‡Г ГЇГ®Г«Г­ГїГҐГ¬ ГЄГіГ°Г±Г®Г°*/
 SET @CURSOR  = CURSOR
 FOR
 SELECT [dbo].[DocumentInItem].[price], [dbo].[DocumentInItem].[quantity] FROM [dbo].[DocumentInItem] inner join [dbo].[documentIn] on [dbo].[DocumentInItem].[DocumentId] = [dbo].[documentIn].[id] where [dbo].[DocumentInItem].[TmcId] = @TMC_ID and [dbo].[documentIn].[DocumentDate] <= @DATE and [dbo].[documentIn].[Done] = 1 order by [dbo].[documentIn].[DocumentDate] DESC
 
-/*Открываем курсор*/
+/*ГЋГІГЄГ°Г»ГўГ ГҐГ¬ ГЄГіГ°Г±Г®Г°*/
 OPEN @CURSOR
-/*Выбираем первую строку*/
+/*Г‚Г»ГЎГЁГ°Г ГҐГ¬ ГЇГҐГ°ГўГіГѕ Г±ГІГ°Г®ГЄГі*/
 FETCH NEXT FROM @CURSOR INTO @PRICE, @DOC_QUANTITY
-/*Выполняем в цикле перебор строк*/
+/*Г‚Г»ГЇГ®Г«Г­ГїГҐГ¬ Гў Г¶ГЁГЄГ«ГҐ ГЇГҐГ°ГҐГЎГ®Г° Г±ГІГ°Г®ГЄ*/
 WHILE @@FETCH_STATUS = 0
 BEGIN
 
@@ -67,7 +67,7 @@ IF(@QUA > @DOC_QUANTITY)
 			BREAK 
 		END
 
-/*Выбираем следующую строку*/
+/*Г‚Г»ГЎГЁГ°Г ГҐГ¬ Г±Г«ГҐГ¤ГіГѕГ№ГіГѕ Г±ГІГ°Г®ГЄГі*/
 FETCH NEXT FROM @CURSOR INTO @PRICE, @DOC_QUANTITY
 END
 CLOSE @CURSOR
