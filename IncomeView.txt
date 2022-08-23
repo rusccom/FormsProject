@@ -1,4 +1,4 @@
-use Moto2018
+use #DataBase#
 go
 
 DECLARE @DATE_FROM DATETIME;
