@@ -1,0 +1,35 @@
+select
+DocumentIn.id,
+1 as DocCode,
+'Приход товара' as DocName,
+DocumentIn.code,
+Customer.name as CustomerId,
+DocumentInItem.price,
+DocumentInItem.quantity,
+system.login.name as LoginId,
+DocumentIn.DocumentDate as DocumentDate
+from DocumentInItem
+inner join DocumentIn on DocumentIn.id = DocumentInItem.DocumentId
+inner join Customer on Customer.id = DocumentIn.CustomerId
+inner join system.login on system.login.id = DocumentInItem.LoginId
+where DocumentInItem.TmcId = #TmcId# and DocumentIn.Done = 1
+
+union all
+
+select
+DocumentOut.id,
+2 as DocCode,
+'Расход товара' as DocName,
+DocumentOut.code,
+Customer.name as CustomerId,
+DocumentOutItem.price,
+DocumentOutItem.quantity,
+system.login.name as LoginId,
+DocumentOut.DocumentDate as DocumentDate
+from DocumentOutItem
+inner join DocumentOut on DocumentOut.id = DocumentOutItem.DocumentId
+inner join Customer on Customer.id = DocumentOut.CustomerId
+inner join system.login on system.login.id = DocumentOutItem.LoginId
+where DocumentOutItem.TmcId = #TmcId# and DocumentOut.Done = 1
+
+order by DocumentDate DESC

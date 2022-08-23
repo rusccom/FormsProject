@@ -1,0 +1,13 @@
+DECLARE @DATE_FROM DATETIME;
+SET @DATE_FROM = '#DateFrom#';
+DECLARE @DATE_TO DATETIME;
+SET @DATE_TO = '#DateTo#';
+
+
+select DocumentOutItem.TmcId, min(TmcView.GroupId) as GroupId, min(TmcView.[name]) as TmcName, sum(DocumentOutItem.quantity) as SumOutQuantity, min(TmcView.quantity) as quantity from DocumentOutItem
+inner join documentOut on DocumentOutItem.DocumentId = documentOut.id
+inner join TmcView on TmcView.id = DocumentOutItem.TmcId
+where TmcView.GroupId not like '%яМотоблок вятка – электрон%' and documentOut.Done = 1 and TmcView.MinQuantity + 10 > TmcView.quantity and documentOut.DocumentDate >= @DATE_FROM and documentOut.DocumentDate <= @DATE_TO
+group by TmcId
+
+order by GroupId, Quantity desc

@@ -1,0 +1,35 @@
+use Moto2018
+go
+
+DECLARE @DATE_FROM DATETIME;
+SET @DATE_FROM = CONVERT(DATETIME, '#DateFrom#', 120);
+DECLARE @DATE_TO DATETIME;
+SET @DATE_TO = CONVERT(DATETIME, '#DateTo#', 120);
+
+select IncomTable.code, IncomTable.CustomerId, IncomTable.TmcId, IncomTable.TmcName, IncomTable.price, IncomTable.quantity, cast((IncomTable.price * IncomTable.quantity) as numeric(15,3)) as suma, IncomTable.InPrice,  cast((IncomTable.InPrice * IncomTable.quantity) as numeric(15,3)) as OutSum, cast(((IncomTable.price * IncomTable.quantity) - (IncomTable.InPrice * IncomTable.quantity)) as numeric(15,3)) as Income, IncomTable.DocumentDate,
+cast((CASE WHEN IncomTable.InPrice = 0 THEN 100 ELSE (((IncomTable.price/IncomTable.InPrice)-1)*100) END) as numeric(15,2))  as AddPricePercent
+ from
+(select 
+docOut.code,
+docOutItem.TmcId,
+dbo.tmc.[name] as TmcName,
+(([dbo].[GetPrice](docOutItem.TmcId, (
+(
+select COALESCE(sum(quantity),0) from DocumentInItem 
+	inner join dbo.documentIn on dbo.DocumentInItem.DocumentId = dbo.documentIn.id 
+		where  DocumentInItem.TmcId = docOutItem.TmcId and dbo.documentIn.DocumentDate <= docOut.DocumentDate)
+-
+(select COALESCE(sum(quantity),0) from DocumentOutItem 
+	inner join dbo.documentOut on dbo.DocumentOutItem.DocumentId = dbo.documentOut.id 
+		where DocumentOutItem.TmcId = docOutItem.TmcId and dbo.documentOut.DocumentDate < docOut.DocumentDate)
+), docOut.DocumentDate))) as InPrice,
+docOutItem.price,
+docOutItem.quantity,
+dbo.Customer.[name] as CustomerId,
+docOut.DocumentDate
+from DocumentOutItem as docOutItem
+inner join dbo.documentOut as docOut on docOutItem.DocumentId = docOut.id
+inner join dbo.tmc on docOutItem.TmcId = tmc.id
+inner join dbo.Customer on dbo.Customer.id = docOut.CustomerId 
+where docOut.DocumentDate <= @DATE_FROM and docOut.DocumentDate >= @DATE_TO) as IncomTable
+order by IncomTable.DocumentDate desc, IncomTable.code

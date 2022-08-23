@@ -1,0 +1,11 @@
+SELECT        dbo.tmc.id, dbo.tmc.name, dbo.Unit.name AS UnitId, dbo.TmcGroup.name AS GroupId, dbo.tmc.MinQuantity, dbo.tmc.price, dbo.tmc.price1, dbo.tmc.price2, dbo.tmc.price3,
+                             (SELECT        COALESCE (SUM(quantity), 0) AS Expr1
+                               FROM            dbo.DocumentInItem inner join dbo.documentIn on dbo.documentIn.id = dbo.DocumentInItem.DocumentId
+                               WHERE        (TmcId = dbo.tmc.id) AND (dbo.documentIn.Done = 1) ) -
+                             (SELECT        COALESCE (SUM(quantity), 0) AS Expr1
+                               FROM            dbo.DocumentOutItem inner join dbo.documentOut on dbo.documentOut.id = dbo.DocumentOutItem.DocumentId
+                               WHERE        (TmcId = dbo.tmc.id) AND ((dbo.documentOut.Done = 1) )) AS quantity, system.login.name AS LoginId, dbo.tmc.CreateDate
+FROM            dbo.tmc 
+INNER JOIN system.login ON dbo.tmc.LoginId = system.login.id 
+INNER JOIN dbo.Unit ON dbo.tmc.UnitId = dbo.Unit.id 
+INNER JOIN dbo.TmcGroup ON dbo.tmc.GroupId = dbo.TmcGroup.id

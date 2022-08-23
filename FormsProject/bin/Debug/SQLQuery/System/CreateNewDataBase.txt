@@ -1,0 +1,371 @@
+use master
+go
+create database #TableName#
+go
+
+use #TableName#
+go
+
+create schema system
+go
+
+-----------------------------system tables-------------------------------
+
+create table system.[login] (
+  id				int identity (1, 1) not null primary key,
+  [name]			varchar(50) not null unique,
+  pass				varchar(50) not null
+)
+
+--
+insert into system.login ([name], pass) values ('Admin', '123');
+--
+------------------------------data tables--------------------------------
+
+create table dbo.Unit (
+  id				int identity (1, 1) not null primary key,
+  [name]			varchar(max) not null,
+  [Description]     varchar(max) not null,
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null,
+)
+GO
+
+insert into dbo.Unit ([name], [Description], [LoginId], [CreateDate]) values ('шт.', 'Штуки', 1, GETDATE());
+GO
+
+create table dbo.TmcGroup (
+  id				int identity (1, 1) not null primary key,
+  [name]			varchar(max) not null,
+  GroupId			int not null,
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null,
+)
+
+GO
+
+insert into dbo.TmcGroup([name], [GroupId], [LoginId], [CreateDate]) values ('Группа товаров', 1, 1, GETDATE());
+GO
+
+create table dbo.[PriceType] 
+(
+  id				int not null unique,
+  [name]          	varchar(200) not null,
+  [ColumnName]       	varchar(200) not null,
+)
+
+go
+
+insert into dbo.[PriceType] values(1, 'Закупочная', 'price')
+insert into dbo.[PriceType] values(2, 'Цена 1', 'price1')
+insert into dbo.[PriceType] values(3, 'Цена 2', 'price2')
+insert into dbo.[PriceType] values(4, 'Цена 3', 'price3')
+go
+
+create table dbo.[Customer] (
+  id				int identity (1, 1) not null primary key,
+  [name]          	varchar(200) not null,
+  [PriceTypeId]		int not null references [PriceType](id),
+  [address]       	varchar(200) not null,
+  info	         	text,
+  LoginId			int not null references system.login(id),
+  CreateDate	  	datetime not null,
+)
+
+create table dbo.tmc (
+  id				int identity (1, 1) not null primary key,
+  code				varchar(20) not null unique,
+  [name]       		varchar(300) not null unique,
+  [UnitId]          int not null references Unit(id),
+  GroupId			int not null references TmcGroup(id),
+  MinQuantity	  	int not null default (0),
+  price         	numeric(15,3) not null default (0),
+  price1         	numeric(15,3) not null default (0),
+  price2         	numeric(15,3) not null default (0),
+  price3         	numeric(15,3) not null default (0),
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null
+)
+
+create table dbo.[documentIn] (
+  id				int identity (1, 1) not null primary key,
+  Done				tinyint not null default(0),	
+  code				varchar(20) not null,
+  CustomerId			int not null references Customer(id),
+  DocumentDate		datetime,
+  note				varchar(300) not null,
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null
+)
+
+create table dbo.DocumentInItem (
+  id				int identity (1, 1) not null primary key,	
+  DocumentId		int not null references [documentIn](id),
+  TmcId				int not null references tmc(id),	
+  price				numeric(15,3) not null,
+  quantity			numeric(16,1) not null default (1),
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null,
+)
+
+create table dbo.[documentOut] (
+  id				int identity (1, 1) not null primary key,
+  Done				tinyint not null default(0),	
+  code				varchar(20) not null,
+  CustomerId			int not null references Customer(id),
+  DocumentDate		datetime,
+  note				varchar(300) not null,
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null
+)
+
+create table dbo.DocumentOutItem (
+  id				int identity (1, 1) not null primary key,	
+  DocumentId		int not null references [documentOut](id),
+  TmcId				int not null references tmc(id),	
+  price				numeric(15,3) not null,
+  quantity			numeric(16,1) not null default (1),
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null,
+)
+
+create table dbo.[documentMoneyIn] (
+  id				int identity (1, 1) not null primary key,
+  Done				tinyint not null default(0),	
+  code				varchar(20) not null,
+  CustomerId			int not null references Customer(id),
+  suma				numeric(15,3) not null default(0),
+  NonCash				tinyint not null default(1),
+  DocumentDate		datetime,
+  note				varchar(300) not null,
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null
+)
+
+create table dbo.[documentMoneyOut] (
+  id				int identity (1, 1) not null primary key,
+  Done				tinyint not null default(0),
+  code				varchar(20) not null,
+  CustomerId			int not null references Customer(id),
+  suma				numeric(15,3) not null default(0),
+  NonCash			tinyint not null default(1),
+  DocumentDate		datetime,
+  note				varchar(300) not null,
+  LoginId			int not null references system.login(id),
+  CreateDate		datetime not null
+)
+
+
+create table dbo.TmcQuantity (
+  id				int identity (1, 1) not null primary key,	
+  TmcId			int not null references tmc(id),	
+  quantity			numeric(15,1) not null default (0),
+)
+
+go
+
+----------------------------------views------------------------------------
+
+CREATE view [system].[LoginView] as
+select system.login.id, system.login.name, '************************' as pass
+from system.login
+go
+
+CREATE view dbo.TmcView as
+SELECT        dbo.tmc.id, dbo.tmc.name, dbo.Unit.name AS UnitId, dbo.TmcGroup.name AS GroupId, dbo.tmc.MinQuantity, dbo.tmc.price, dbo.tmc.price1, dbo.tmc.price2, dbo.tmc.price3,
+                             (SELECT        COALESCE (SUM(dbo.DocumentInItem.quantity), 0) AS Expr1
+                               FROM            dbo.DocumentInItem INNER JOIN
+                                                         dbo.documentIn ON dbo.documentIn.id = dbo.DocumentInItem.DocumentId
+                               WHERE        (dbo.DocumentInItem.TmcId = dbo.tmc.id) AND (dbo.documentIn.Done = 1)) -
+                             (SELECT        COALESCE (SUM(dbo.DocumentOutItem.quantity), 0) AS Expr1
+                               FROM            dbo.DocumentOutItem INNER JOIN
+                                                         dbo.documentOut ON dbo.documentOut.id = dbo.DocumentOutItem.DocumentId
+                               WHERE        (dbo.DocumentOutItem.TmcId = dbo.tmc.id) AND (dbo.documentOut.Done = 1)) AS quantity, system.login.name AS LoginId, dbo.tmc.CreateDate
+FROM            dbo.tmc INNER JOIN
+                         system.login ON dbo.tmc.LoginId = system.login.id INNER JOIN
+                         dbo.Unit ON dbo.tmc.UnitId = dbo.Unit.id INNER JOIN
+                         dbo.TmcGroup ON dbo.tmc.GroupId = dbo.TmcGroup.id
+go
+
+CREATE view [UnitView] as
+SELECT        dbo.Unit.id, dbo.Unit.name, dbo.Unit.Description, system.login.name AS LoginId, dbo.Unit.CreateDate
+FROM            dbo.Unit INNER JOIN
+                         system.login ON dbo.Unit.LoginId = system.login.id
+go
+
+
+CREATE VIEW TmcGroupView as
+SELECT        dbo.TmcGroup.id, dbo.TmcGroup.name, dbo.TmcGroup.GroupId, system.login.name AS LoginId, dbo.TmcGroup.CreateDate
+FROM            dbo.TmcGroup INNER JOIN
+                         system.login ON dbo.TmcGroup.LoginId = system.login.id
+go
+
+--documents views
+
+
+CREATE VIEW DocumentItemInView AS
+SELECT        dbo.DocumentInItem.id, dbo.DocumentInItem.DocumentId, dbo.tmc.name AS TmcName, dbo.Unit.name AS UnitId, dbo.DocumentInItem.TmcId, dbo.DocumentInItem.price, dbo.DocumentInItem.quantity, 
+                         dbo.DocumentInItem.price * dbo.DocumentInItem.quantity AS suma, system.login.name AS LoginId, dbo.DocumentInItem.CreateDate
+FROM            dbo.DocumentInItem INNER JOIN
+                         system.login ON dbo.DocumentInItem.LoginId = system.login.id INNER JOIN
+                         dbo.tmc ON dbo.DocumentInItem.TmcId = dbo.tmc.id INNER JOIN
+                         dbo.Unit ON dbo.tmc.UnitId = dbo.Unit.id
+go
+
+CREATE view [dbo].[DocumentInView] as
+SELECT        dbo.documentIn.id, dbo.documentIn.Done, dbo.documentIn.code, dbo.documentIn.DocumentDate, system.login.name AS LoginId, dbo.Customer.name AS CustomerId,
+                             (SELECT        COALESCE (SUM(price * quantity), 0) AS suma
+                               FROM            dbo.DocumentInItem
+                               WHERE        (DocumentId = dbo.documentIn.id)) AS suma, dbo.documentIn.note
+FROM            dbo.documentIn INNER JOIN
+                         dbo.Customer ON dbo.documentIn.CustomerId = dbo.Customer.id INNER JOIN
+                         system.login ON dbo.documentIn.LoginId = system.login.id
+go
+
+CREATE VIEW DocumentItemOutView AS
+SELECT        dbo.DocumentOutItem.id, dbo.DocumentOutItem.DocumentId, dbo.tmc.name AS TmcName, dbo.Unit.name AS UnitId, dbo.DocumentOutItem.TmcId, dbo.DocumentOutItem.price, dbo.DocumentOutItem.quantity, 
+                         dbo.DocumentOutItem.price * dbo.DocumentOutItem.quantity AS suma, system.login.name AS LoginId, dbo.DocumentOutItem.CreateDate
+FROM            dbo.DocumentOutItem INNER JOIN
+                         system.login ON dbo.DocumentOutItem.LoginId = system.login.id INNER JOIN
+                         dbo.tmc ON dbo.DocumentOutItem.TmcId = dbo.tmc.id INNER JOIN
+                         dbo.Unit ON dbo.tmc.UnitId = dbo.Unit.id
+go
+
+CREATE view [dbo].[DocumentOutView] as
+SELECT        dbo.documentOut.id, dbo.documentOut.Done, dbo.documentOut.code, dbo.documentOut.DocumentDate, system.login.name AS LoginId, dbo.Customer.name AS CustomerId,
+                             (SELECT        COALESCE (SUM(price * quantity), 0) AS suma
+                               FROM            dbo.DocumentOutItem
+                               WHERE        (DocumentId = dbo.documentOut.id)) AS suma, dbo.documentOut.note
+FROM            dbo.documentOut INNER JOIN
+                         dbo.Customer ON dbo.documentOut.CustomerId = dbo.Customer.id INNER JOIN
+                         system.login ON dbo.documentOut.LoginId = system.login.id
+go
+
+
+--moneys views
+
+CREATE view [dbo].[DocumentMoneyInView] as
+SELECT        dbo.documentMoneyIn.id, dbo.documentMoneyIn.Done, dbo.documentMoneyIn.code, dbo.documentMoneyIn.DocumentDate, system.login.name AS LoginId, dbo.Customer.name AS CustomerId, dbo.documentMoneyIn.suma, 
+                         dbo.documentMoneyIn.NonCash, dbo.documentMoneyIn.note
+FROM            dbo.documentMoneyIn INNER JOIN
+                         dbo.Customer ON dbo.documentMoneyIn.CustomerId = dbo.Customer.id INNER JOIN
+                         system.login ON dbo.documentMoneyIn.LoginId = system.login.id
+go
+
+CREATE view [dbo].[DocumentMoneyOutView] as
+SELECT        dbo.documentMoneyOut.id, dbo.documentMoneyOut.Done, dbo.documentMoneyOut.code, dbo.documentMoneyOut.DocumentDate, system.login.name AS LoginId, dbo.Customer.name AS CustomerId, 
+                         dbo.documentMoneyOut.suma, dbo.documentMoneyOut.NonCash, dbo.documentMoneyOut.note
+FROM            dbo.documentMoneyOut INNER JOIN
+                         dbo.Customer ON dbo.documentMoneyOut.CustomerId = dbo.Customer.id INNER JOIN
+                         system.login ON dbo.documentMoneyOut.LoginId = system.login.id
+go
+
+CREATE view [CustomerView] as
+SELECT        dbo.Customer.id, dbo.Customer.name,
+                             (SELECT        COALESCE (SUM(suma), 0) AS Expr1
+                               FROM            dbo.documentMoneyIn
+                               WHERE        (Done = 1) AND (CustomerId = dbo.Customer.id)) -
+                             (SELECT        COALESCE (SUM(dbo.DocumentOutItem.price * dbo.DocumentOutItem.quantity), 0) AS Expr1
+                               FROM            dbo.DocumentOutItem INNER JOIN
+                                                         dbo.documentOut ON dbo.documentOut.id = dbo.DocumentOutItem.DocumentId
+                               WHERE        (dbo.documentOut.Done = 1) AND (dbo.documentOut.CustomerId = dbo.Customer.id)) +
+                             (SELECT        COALESCE (SUM(dbo.DocumentInItem.price * dbo.DocumentInItem.quantity), 0) AS Expr1
+                               FROM            dbo.DocumentInItem INNER JOIN
+                                                         dbo.documentIn ON dbo.documentIn.id = dbo.DocumentInItem.DocumentId
+                               WHERE        (dbo.documentIn.Done = 1) AND (dbo.documentIn.CustomerId = dbo.Customer.id)) -
+                             (SELECT        COALESCE (SUM(suma), 0) AS Expr1
+                               FROM            dbo.documentMoneyOut
+                               WHERE        (Done = 1) AND (CustomerId = dbo.Customer.id)) AS Debts,
+                             (SELECT        COALESCE (SUM(suma), 0) AS Expr1
+                               FROM            dbo.documentMoneyIn
+                               WHERE        (Done = 0) AND (NonCash = 1) AND (CustomerId = dbo.Customer.id)) AS NonCashInDebt,
+                             (SELECT        COALESCE (SUM(suma), 0) AS Expr1
+                               FROM            dbo.documentMoneyOut
+                               WHERE        (Done = 0) AND (NonCash = 1) AND (CustomerId = dbo.Customer.id)) AS NonCashOutDebt, dbo.PriceType.name AS PriceTypeId, dbo.Customer.address, dbo.Customer.info, system.login.name AS LoginId, 
+                         dbo.Customer.CreateDate
+FROM            dbo.Customer INNER JOIN
+                         system.login ON system.login.id = dbo.Customer.LoginId INNER JOIN
+                         dbo.PriceType ON dbo.PriceType.id = dbo.Customer.PriceTypeId
+go
+
+-------------------------------------- Function ---------------------------
+CREATE FUNCTION [dbo].[GetPrice](@TMC_ID int, @LAST_QUANTITY decimal, @DATE datetime)  
+RETURNS decimal(15,3)  
+WITH EXECUTE AS CALLER  
+AS  
+BEGIN  
+DECLARE @SUMPRICE numeric(15,3);
+DECLARE @SUM_DOC_PRICE numeric(15,3);
+DECLARE @PRICE numeric(15,3);
+SET @PRICE = 0;
+SET @SUM_DOC_PRICE = 0;
+SET @SUMPRICE = 0;
+
+DECLARE @DOC_QUANTITY numeric(15,2);
+DECLARE @SUM_DOC_QUANTITY numeric(15,3);
+SET @DOC_QUANTITY = 0;
+SET @SUM_DOC_QUANTITY = 0;
+
+DECLARE @QUA numeric(15,2);
+SET @QUA = @LAST_QUANTITY;
+
+     /*Объявляем курсор*/
+DECLARE @CURSOR CURSOR
+/*Заполняем курсор*/
+SET @CURSOR  = CURSOR
+FOR
+SELECT [dbo].[DocumentInItem].[price], [dbo].[DocumentInItem].[quantity] FROM [dbo].[DocumentInItem] inner join [dbo].[documentIn] on [dbo].[DocumentInItem].[DocumentId] = [dbo].[documentIn].[id] where [dbo].[DocumentInItem].[TmcId] = @TMC_ID and [dbo].[documentIn].[DocumentDate] <= @DATE and [dbo].[documentIn].[Done] = 1 order by [dbo].[documentIn].[DocumentDate] DESC
+
+/*Открываем курсор*/
+OPEN @CURSOR
+/*Выбираем первую строку*/
+FETCH NEXT FROM @CURSOR INTO @PRICE, @DOC_QUANTITY
+/*Выполняем в цикле перебор строк*/
+WHILE @@FETCH_STATUS = 0
+BEGIN
+
+if(@QUA <= 0 AND @SUMPRICE = 0)
+	BEGIN
+		SET @SUMPRICE = @PRICE;
+		BREAK
+	END
+
+IF(@QUA > @DOC_QUANTITY)
+        BEGIN
+			SET @QUA = @QUA - @DOC_QUANTITY;
+			SET @SUM_DOC_PRICE += @DOC_QUANTITY * @PRICE;
+			SET @SUM_DOC_QUANTITY += @DOC_QUANTITY;
+			IF(@SUM_DOC_QUANTITY != 0)
+					BEGIN
+						SET @SUMPRICE = @SUM_DOC_PRICE / @SUM_DOC_QUANTITY;
+					END
+				ELSE
+					BEGIN
+						SET @SUMPRICE = @SUM_DOC_PRICE;
+					END
+		END
+		ELSE
+		BEGIN
+			if(@QUA = @DOC_QUANTITY)
+				BEGIN
+					SET @SUM_DOC_PRICE += @DOC_QUANTITY * @PRICE;
+					SET @SUM_DOC_QUANTITY += @DOC_QUANTITY;
+					SET @SUMPRICE = @SUM_DOC_PRICE / @SUM_DOC_QUANTITY;
+				END
+				ELSE
+				BEGIN
+					SET @SUM_DOC_PRICE += @QUA * @PRICE;
+					SET @SUM_DOC_QUANTITY += @QUA;
+					SET @SUMPRICE = @SUM_DOC_PRICE / @SUM_DOC_QUANTITY;
+				END
+			BREAK 
+		END
+
+/*Выбираем следующую строку*/
+FETCH NEXT FROM @CURSOR INTO @PRICE, @DOC_QUANTITY
+END
+CLOSE @CURSOR
+     RETURN(@SUMPRICE);  
+END;  
+
+

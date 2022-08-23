@@ -1,0 +1,21 @@
+select
+dbo.Customer.id,
+dbo.Customer.name,
+(
+(select COALESCE(sum(DocumentMoneyIn.suma),0) from DocumentMoneyIn where DocumentMoneyIn.Done = 1 and DocumentMoneyIn.CustomerId = dbo.Customer.id)
+-
+(select COALESCE(sum(DocumentOutItem.price * DocumentOutItem.quantity),0) from DocumentOutItem inner join documentOut on documentOut.id = dbo.DocumentOutItem.DocumentId where documentOut.Done = 1 and documentOut.CustomerId = dbo.Customer.id)
++
+(select COALESCE(sum(DocumentInItem.price * DocumentInItem.quantity),0) from DocumentInItem inner join documentIn on documentIn.id = dbo.DocumentInItem.DocumentId where documentIn.Done = 1 and documentIn.CustomerId = dbo.Customer.id)
+-
+(select COALESCE(sum(DocumentMoneyOut.suma),0) from DocumentMoneyOut where DocumentMoneyOut.Done = 1 and DocumentMoneyOut.CustomerId = dbo.Customer.id)
+) as Debts,
+(select COALESCE(sum(DocumentMoneyIn.suma),0) from DocumentMoneyIn where DocumentMoneyIn.Done = 0 and DocumentMoneyIn.NonCash = 1 and DocumentMoneyIn.CustomerId = dbo.Customer.id) as NonCashInDebt,
+(select COALESCE(sum(DocumentMoneyOut.suma),0) from DocumentMoneyOut where DocumentMoneyOut.Done = 0 and DocumentMoneyOut.NonCash = 1 and DocumentMoneyOut.CustomerId = dbo.Customer.id) as NonCashOutDebt,
+dbo.Customer.[address],
+dbo.Customer.info,
+[system].[login].name as LoginId,
+dbo.Customer.CreateDate
+from dbo.Customer
+inner join [system].[login] on [system].[login].id = dbo.Customer.LoginId
+order by dbo.Customer.name

@@ -1,0 +1,56 @@
+select
+DocumentIn.id,
+1 as DocCode,
+'Приход товара' as DocName,
+DocumentIn.code,
+(select COALESCE(sum(price*quantity), 0) from DocumentInItem where DocumentId = DocumentIn.id) as suma,
+system.login.name as LoginId,
+DocumentIn.DocumentDate
+from DocumentIn
+inner join system.login on system.login.id = DocumentIn.LoginId
+where DocumentIn.CustomerId = #CusId# and DocumentIn.Done = 1
+
+union all
+
+select
+DocumentOut.id,
+2 as DocCode,
+'Расход товара' as DocName,
+DocumentOut.code,
+(select COALESCE(sum(price*quantity), 0) from DocumentOutItem where DocumentId = DocumentOut.id) as suma,
+system.login.name as LoginId,
+DocumentOut.DocumentDate
+from DocumentOut
+inner join system.login on system.login.id = DocumentOut.LoginId
+where DocumentOut.CustomerId = #CusId# and DocumentOut.Done = 1
+
+union all
+
+select
+documentMoneyIn.id,
+3 as DocCode,
+'Приход кассы' as DocName,
+documentMoneyIn.code,
+documentMoneyIn.suma,
+system.login.name as LoginId,
+documentMoneyIn.DocumentDate
+from documentMoneyIn
+inner join system.login on system.login.id = documentMoneyIn.LoginId
+where documentMoneyIn.CustomerId = #CusId# and documentMoneyIn.Done = 1
+
+union all
+
+select
+documentMoneyOut.id,
+4 as DocCode,
+'Расход кассы' as DocName,
+documentMoneyOut.code,
+documentMoneyOut.suma,
+system.login.name as LoginId,
+documentMoneyOut.DocumentDate
+from documentMoneyOut
+inner join system.login on system.login.id = documentMoneyOut.LoginId
+where documentMoneyOut.CustomerId = #CusId# and documentMoneyOut.Done = 1
+
+
+order by DocumentDate DESC

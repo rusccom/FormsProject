@@ -1,0 +1,78 @@
+use Moto2018
+go
+
+
+CREATE FUNCTION [dbo].[GetPrice](@TMC_ID int, @LAST_QUANTITY decimal, @DATE datetime)  
+RETURNS decimal(15,3)  
+WITH EXECUTE AS CALLER  
+AS  
+BEGIN  
+DECLARE @SUMPRICE numeric(15,3);
+DECLARE @SUM_DOC_PRICE numeric(15,3);
+DECLARE @PRICE numeric(15,3);
+SET @PRICE = 0;
+SET @SUM_DOC_PRICE = 0;
+SET @SUMPRICE = 0;
+
+DECLARE @DOC_QUANTITY numeric(15,2);
+DECLARE @SUM_DOC_QUANTITY numeric(15,3);
+SET @DOC_QUANTITY = 0;
+SET @SUM_DOC_QUANTITY = 0;
+
+DECLARE @QUA numeric(15,2);
+SET @QUA = @LAST_QUANTITY;
+
+     /*Объявляем курсор*/
+DECLARE @CURSOR CURSOR
+/*Заполняем курсор*/
+SET @CURSOR  = CURSOR
+FOR
+SELECT [dbo].[DocumentInItem].[price], [dbo].[DocumentInItem].[quantity] FROM [dbo].[DocumentInItem] inner join [dbo].[documentIn] on [dbo].[DocumentInItem].[DocumentId] = [dbo].[documentIn].[id] where [dbo].[DocumentInItem].[TmcId] = @TMC_ID and [dbo].[documentIn].[DocumentDate] <= @DATE and [dbo].[documentIn].[Done] = 1 order by [dbo].[documentIn].[DocumentDate] DESC
+
+/*Открываем курсор*/
+OPEN @CURSOR
+/*Выбираем первую строку*/
+FETCH NEXT FROM @CURSOR INTO @PRICE, @DOC_QUANTITY
+/*Выполняем в цикле перебор строк*/
+WHILE @@FETCH_STATUS = 0
+BEGIN
+
+if(@QUA <= 0 AND @SUMPRICE = 0)
+	BEGIN
+		SET @SUMPRICE = @PRICE;
+		BREAK
+	END
+
+IF(@QUA > @DOC_QUANTITY)
+        BEGIN
+			SET @QUA = @QUA - @DOC_QUANTITY;
+			SET @SUM_DOC_PRICE += @DOC_QUANTITY * @PRICE;
+			SET @SUM_DOC_QUANTITY += @DOC_QUANTITY;
+			SET @SUMPRICE = @SUM_DOC_PRICE / @SUM_DOC_QUANTITY;
+		END
+		ELSE
+		BEGIN
+			if(@QUA = @DOC_QUANTITY)
+				BEGIN
+					SET @SUM_DOC_PRICE += @DOC_QUANTITY * @PRICE;
+					SET @SUM_DOC_QUANTITY += @DOC_QUANTITY;
+					SET @SUMPRICE = @SUM_DOC_PRICE / @SUM_DOC_QUANTITY;
+				END
+				ELSE
+				BEGIN
+					SET @SUM_DOC_PRICE += @QUA * @PRICE;
+					SET @SUM_DOC_QUANTITY += @QUA;
+					SET @SUMPRICE = @SUM_DOC_PRICE / @SUM_DOC_QUANTITY;
+				END
+			BREAK 
+		END
+
+/*Выбираем следующую строку*/
+FETCH NEXT FROM @CURSOR INTO @PRICE, @DOC_QUANTITY
+END
+CLOSE @CURSOR
+     RETURN(@SUMPRICE);  
+END;  
+GO
+
+

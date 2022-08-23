@@ -1,0 +1,31 @@
+select
+3 as DocCode,
+'Приход кассы' as DocName,
+ dbo.documentMoneyIn.id,
+ dbo.documentMoneyIn.Done,
+ dbo.documentMoneyIn.code,
+ dbo.documentMoneyIn.suma,
+ dbo.documentMoneyIn.note,
+ system.login.name as LoginId,
+ dbo.documentMoneyIn.DocumentDate
+ from dbo.documentMoneyIn 
+ inner join system.login on system.login.id = dbo.documentMoneyIn.LoginId
+ where dbo.documentMoneyIn.CustomerId = #CusId# and dbo.documentMoneyIn.NonCash = 1
+
+union all
+
+select
+4 as DocCode,
+'Расход кассы' as DocName,
+ dbo.documentMoneyOut.id,
+ dbo.documentMoneyOut.Done,
+ dbo.documentMoneyOut.code,
+ dbo.documentMoneyOut.suma,
+ dbo.documentMoneyOut.note,
+ system.login.name as LoginId,
+ dbo.documentMoneyOut.DocumentDate
+ from dbo.documentMoneyOut 
+ inner join system.login on system.login.id = dbo.documentMoneyOut.LoginId
+ where dbo.documentMoneyOut.CustomerId = #CusId# and dbo.documentMoneyOut.NonCash = 1
+
+order by Done ASC, DocumentDate DESC

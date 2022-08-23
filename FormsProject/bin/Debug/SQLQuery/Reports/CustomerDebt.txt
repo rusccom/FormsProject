@@ -1,0 +1,12 @@
+select
+(
+(select COALESCE(sum(DocumentMoneyIn.suma),0) from DocumentMoneyIn where DocumentMoneyIn.Done = 1 and DocumentMoneyIn.CustomerId = #CusId#)
+-
+(select COALESCE(sum(DocumentOutItem.price * DocumentOutItem.quantity),0) from DocumentOutItem inner join documentOut on documentOut.id = dbo.DocumentOutItem.DocumentId where documentOut.Done = 1 and documentOut.CustomerId = #CusId#)
++
+(select COALESCE(sum(DocumentInItem.price * DocumentInItem.quantity),0) from DocumentInItem inner join documentIn on documentIn.id = dbo.DocumentInItem.DocumentId where documentIn.Done = 1 and documentIn.CustomerId = #CusId#)
+-
+(select COALESCE(sum(DocumentMoneyOut.suma),0) from DocumentMoneyOut where DocumentMoneyOut.Done = 1 and DocumentMoneyOut.CustomerId = #CusId#)
+) as Debts,
+(select COALESCE(sum(DocumentMoneyIn.suma),0) from DocumentMoneyIn where DocumentMoneyIn.Done = 0 and DocumentMoneyIn.NonCash = 1 and DocumentMoneyIn.CustomerId = #CusId#) as NonCashInDebt,
+(select COALESCE(sum(DocumentMoneyOut.suma),0) from DocumentMoneyOut where DocumentMoneyOut.Done = 0 and DocumentMoneyOut.NonCash = 1 and DocumentMoneyOut.CustomerId = #CusId#) as NonCashOutDebt

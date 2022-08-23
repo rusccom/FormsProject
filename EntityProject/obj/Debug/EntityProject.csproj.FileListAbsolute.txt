@@ -1,0 +1,10 @@
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityProject.dll.config
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityProject.dll
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityProject.pdb
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityFramework.dll
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityFramework.SqlServer.dll
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityFramework.xml
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\bin\Debug\EntityFramework.SqlServer.xml
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\obj\Debug\EntityProject.dll
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\obj\Debug\EntityProject.pdb
+C:\Users\User\documents\visual studio 2015\Projects\FormsProject\EntityProject\obj\Debug\EntityProject.csprojResolveAssemblyReference.cache
